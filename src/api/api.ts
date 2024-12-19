@@ -8,13 +8,16 @@ const api = axios.create({
 });
 
 
-// Busca todos os produtos
 export const fetchProducts = async () => {
     const response = await api.get("/products");
     return response.data;
 };
 
-// Busca todas as categorias
+export const fetchProductsByCategory = async (categoryId: string | number) => {
+    const response = await api.get(`/products/filter_by_category/${categoryId}`);
+    return response.data;
+};
+
 export const fetchCategories = async () => {
     const response = await api.get("/categories");
     return response.data;
