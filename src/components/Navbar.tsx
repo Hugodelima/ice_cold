@@ -1,40 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-function Navbar() {
-  const [carrinhoCount, setCarrinhoCount] = useState<number>(0);
+function Navbar({ carrinhoCount, recuperarCarrinho }: { carrinhoCount: number, recuperarCarrinho: () => void }) {
   const [carrinho, setCarrinho] = useState<any[]>([]); // Usar o tipo adequado para os produtos do carrinho
   const [showModal, setShowModal] = useState<boolean>(false); // Controlar a exibição do modal
 
-  // Função para recuperar o carrinho do localStorage
-  const recuperarCarrinho = () => {
+  // Carregar o carrinho do localStorage quando o componente for montado
+  useEffect(() => {
     const carrinhoSalvo = localStorage.getItem("carrinho");
     if (carrinhoSalvo) {
-      const carrinho = JSON.parse(carrinhoSalvo);
-      setCarrinho(carrinho);
-      setCarrinhoCount(carrinho.length); // Atualiza a quantidade de itens
+      setCarrinho(JSON.parse(carrinhoSalvo)); // Atualizar o estado com o carrinho salvo
     }
-  };
+  }, []); // Executa uma vez, na montagem do componente
 
-  // Função para adicionar produto ao carrinho
-  const adicionarAoCarrinho = (produto: any) => {
-    const carrinhoAtualizado = [...carrinho, { ...produto, quantity: 1 }];
-    setCarrinho(carrinhoAtualizado);
-    setCarrinhoCount(carrinhoAtualizado.length); // Atualiza a quantidade de itens
-    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Atualiza o carrinho no localStorage
-  };
-
-  // Função para remover produto do carrinho
-  const removerDoCarrinho = (produtoId: number) => {
-    const carrinhoAtualizado = carrinho.filter((produto) => produto.id !== produtoId);
-    setCarrinho(carrinhoAtualizado);
-    setCarrinhoCount(carrinhoAtualizado.length); // Atualiza a quantidade de itens
-    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Atualiza o carrinho no localStorage
-  };
+  useEffect(() => {
+    // Sempre que carrinhoCount mudar (quando um item for adicionado/removido), atualizar o carrinho
+    const carrinhoSalvo = localStorage.getItem("carrinho");
+    if (carrinhoSalvo) {
+      setCarrinho(JSON.parse(carrinhoSalvo));
+    }
+  }, [carrinhoCount]); // Observa o número de itens no carrinho
 
   // Função para alterar a quantidade de um item no carrinho
   const alterarQuantidade = (produtoId: number, quantidade: number) => {
-    const novaQuantidade = Math.max(1, quantidade); // Sempre 1 ou maior
+    const novaQuantidade = Math.max(1, quantidade); // Garante que a quantidade seja ao menos 1
 
     const carrinhoAtualizado = carrinho.map((produto) =>
       produto.id === produtoId ? { ...produto, quantity: novaQuantidade } : produto
@@ -44,25 +33,17 @@ function Navbar() {
     localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Atualiza o carrinho no localStorage
   };
 
-  // Função para abrir o modal
-  const abrirModal = () => {
-    setShowModal(true);
-  };
-
-  // Função para fechar o modal
-  const fecharModal = () => {
-    setShowModal(false);
+  // Função para remover produto do carrinho
+  const removerDoCarrinho = (produtoId: number) => {
+    const carrinhoAtualizado = carrinho.filter((produto) => produto.id !== produtoId);
+    setCarrinho(carrinhoAtualizado);
+    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Atualiza o carrinho no localStorage
   };
 
   // Função para calcular o valor total do carrinho
   const calcularValorTotal = () => {
     return carrinho.reduce((total, produto) => total + (produto.value * produto.quantity), 0);
   };
-
-  // Recupera o carrinho ao carregar a página
-  useEffect(() => {
-    recuperarCarrinho();
-  }, []);
 
   return (
     <>
@@ -92,14 +73,13 @@ function Navbar() {
                   Sobre
                 </Link>
               </li>
-              {/* Adicione mais links aqui */}
             </ul>
             <div className="d-flex">
               <button
                 className="btn btn-outline-dark"
-                onClick={abrirModal}
+                onClick={() => setShowModal(true)}
               >
-                <i className="bi bi-cart" /> Carrinho ({carrinhoCount})
+                <i className="bi bi-cart" /> Carrinho ({carrinho.length})
               </button>
             </div>
           </div>
@@ -107,67 +87,67 @@ function Navbar() {
       </nav>
 
       {/* Modal de Carrinho */}
-      <div className={`modal fade ${showModal ? 'show' : ''}`} tabIndex={-1} style={{ display: showModal ? 'block' : 'none' }} aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div className="modal-dialog">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id="exampleModalLabel">Carrinho de Compras</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" onClick={fecharModal}></button>
-            </div>
-            <div className="modal-body">
-              {carrinho.length === 0 ? (
-                <p>O carrinho está vazio.</p>
-              ) : (
-                <ul className="list-group">
-                  {carrinho.map((produto: any) => (
-                    <li key={produto.id} className="list-group-item d-flex justify-content-between align-items-center">
-                      <span>{produto.title}</span>
-                      <div className="d-flex align-items-center">
+      {showModal && (
+        <div className="modal fade show" style={{ display: 'block' }} tabIndex={-1} aria-labelledby="cartModalLabel" aria-hidden="true">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title" id="cartModalLabel">Carrinho de Compras</h5>
+                <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                {carrinho.length === 0 ? (
+                  <p>O carrinho está vazio!</p>
+                ) : (
+                  <ul className="list-group">
+                    {carrinho.map((produto, index) => (
+                      <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{produto.title}</span>
+                        <div className="d-flex align-items-center">
+                          <button
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => alterarQuantidade(produto.id, produto.quantity - 1)}
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            className="form-control mx-2"
+                            value={produto.quantity || 1} // Garantir que o valor seja 1 se a quantidade for indefinida
+                            min="1"
+                            onChange={(e) => alterarQuantidade(produto.id, parseInt(e.target.value) || 1)} // Se o valor for inválido, considera 1
+                            style={{ width: "60px" }}
+                          />
+                          <button
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => alterarQuantidade(produto.id, produto.quantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <span className="ms-3">
+                          R${(produto.value * produto.quantity).toFixed(2)}
+                        </span>
                         <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => alterarQuantidade(produto.id, Math.max(1, produto.quantity - 1))}
+                          className="btn btn-danger btn-sm"
+                          onClick={() => removerDoCarrinho(produto.id)}
                         >
-                          -
+                          Remover
                         </button>
-                        <input
-                          type="number"
-                          className="form-control mx-2"
-                          value={produto.quantity || 1} // Garantir que o valor seja 1 se a quantidade for indefinida
-                          min="1"
-                          onChange={(e) =>
-                            alterarQuantidade(produto.id, parseInt(e.target.value) || 1) // Se o valor for inválido, considera 1
-                          }
-                          style={{ width: "60px" }}
-                        />
-                        <button
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => alterarQuantidade(produto.id, produto.quantity + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <span className="ms-3">
-                        R${(produto.value * produto.quantity).toFixed(2)}
-                      </span>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => removerDoCarrinho(produto.id)}
-                      >
-                        Remover
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="modal-footer">
-              <span className="fs-5">Total: R${calcularValorTotal().toFixed(2)}</span>
-              <button type="button" className="btn btn-secondary" onClick={fecharModal}>Fechar</button>
-              <Link to="/checkout" className="btn btn-primary">Finalizar Compra</Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="modal-footer">
+                <h5>Total: R${calcularValorTotal().toFixed(2)}</h5>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Fechar</button>
+                <Link to="/checkout" className="btn btn-primary">Finalizar Compra</Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

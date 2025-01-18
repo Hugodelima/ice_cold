@@ -53,7 +53,6 @@ function Home() {
     loadData();
   }, []); 
 
-  // Função para alternar a visibilidade dos detalhes do produto
   const toggleDetalhesProduto = (produtoId: number) => {
     setDetalhesProduto((prevState) => ({
       ...prevState,
@@ -61,7 +60,6 @@ function Home() {
     }));
   };
 
-  // Função para adicionar produto ao carrinho e salvar no localStorage
   const adicionarAoCarrinho = (produto: Produto) => {
     const carrinhoAtualizado = [...carrinho, {...produto, quantity: 1}];
     setCarrinho(carrinhoAtualizado);
@@ -76,7 +74,6 @@ function Home() {
     }
   };
 
-  // Dados simulados de avaliações (substitua pela requisição real em breve)
   const obterAvaliacoes = (produtoId: number): Avaliacao[] => {
     return [
       { rating: 5, comment: "Excelente produto! Adoro o sabor!", created_at: "2025-01-15" },
@@ -85,9 +82,11 @@ function Home() {
     ];
   };
 
+  console.log("home quantidade: " + carrinho.length);
+  
   return (
     <>
-      <Navbar carrinhoCount={carrinho.length} />
+      <Navbar carrinhoCount={carrinho.length} recuperarCarrinho={recuperarCarrinho} />
       
       <main className="container mt-5">
         {categorias.map((categoria) => (
