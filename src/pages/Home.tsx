@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchCategories, fetchProductsByCategory } from "../api/api";
 import Navbar from "../components/Navbar";
+import "../App.css"
 
 interface Categoria {
   id: number;

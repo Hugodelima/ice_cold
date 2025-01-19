@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "../App.css"
 
 function Navbar({ carrinhoCount, recuperarCarrinho }: { carrinhoCount: number, recuperarCarrinho: () => void }) {
   const [carrinho, setCarrinho] = useState<any[]>([]); // Usar o tipo adequado para os produtos do carrinho
