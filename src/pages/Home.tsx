@@ -38,13 +38,16 @@ function Home() {
         const categoriasData = await fetchCategories();
         console.log("Categorias recebidas:", categoriasData);
         
+        // Limitar para as 3 primeiras categorias
+        const categoriasLimitadas = categoriasData.slice(0, 3);
+
         const produtosData: { [key: number]: Produto[] } = {};
-        for (const categoria of categoriasData) {
+        for (const categoria of categoriasLimitadas) {
           const produtos = await fetchProductsByCategory(categoria.id);
           produtosData[categoria.id] = produtos.slice(0, 6); // Limitar a 6 produtos
         }
-        
-        setCategorias(categoriasData);
+
+        setCategorias(categoriasLimitadas);
         setProdutosPorCategoria(produtosData);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -84,7 +87,7 @@ function Home() {
   };
 
   console.log("home quantidade: " + carrinho.length);
-  
+
   return (
     <>
       <Navbar carrinhoCount={carrinho.length} recuperarCarrinho={recuperarCarrinho} />
