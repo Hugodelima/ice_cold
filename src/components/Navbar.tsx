@@ -1,49 +1,80 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import "../App.css"
-
+import "../App.css";
+import { createSale } from "../api/api"; 
 function Navbar({ carrinhoCount, recuperarCarrinho }: { carrinhoCount: number, recuperarCarrinho: () => void }) {
-  const [carrinho, setCarrinho] = useState<any[]>([]); // Usar o tipo adequado para os produtos do carrinho
-  const [showModal, setShowModal] = useState<boolean>(false); // Controlar a exibição do modal
+  const [carrinho, setCarrinho] = useState<any[]>([]); 
+  const [showModal, setShowModal] = useState<boolean>(false); 
 
-  // Carregar o carrinho do localStorage quando o componente for montado
-  useEffect(() => {
-    const carrinhoSalvo = localStorage.getItem("carrinho");
-    if (carrinhoSalvo) {
-      setCarrinho(JSON.parse(carrinhoSalvo)); // Atualizar o estado com o carrinho salvo
-    }
-  }, []); // Executa uma vez, na montagem do componente
 
   useEffect(() => {
-    // Sempre que carrinhoCount mudar (quando um item for adicionado/removido), atualizar o carrinho
     const carrinhoSalvo = localStorage.getItem("carrinho");
     if (carrinhoSalvo) {
       setCarrinho(JSON.parse(carrinhoSalvo));
     }
-  }, [carrinhoCount]); // Observa o número de itens no carrinho
+  }, []); 
 
-  // Função para alterar a quantidade de um item no carrinho
+  useEffect(() => {
+    const carrinhoSalvo = localStorage.getItem("carrinho");
+    if (carrinhoSalvo) {
+      setCarrinho(JSON.parse(carrinhoSalvo));
+    }
+  }, [carrinhoCount]); 
+
+
   const alterarQuantidade = (produtoId: number, quantidade: number) => {
-    const novaQuantidade = Math.max(1, quantidade); // Garante que a quantidade seja ao menos 1
+    const novaQuantidade = Math.max(1, quantidade);
 
     const carrinhoAtualizado = carrinho.map((produto) =>
       produto.id === produtoId ? { ...produto, quantity: novaQuantidade } : produto
     );
 
     setCarrinho(carrinhoAtualizado);
-    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Atualiza o carrinho no localStorage
+    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado));  
   };
 
-  // Função para remover produto do carrinho
+
   const removerDoCarrinho = (produtoId: number) => {
     const carrinhoAtualizado = carrinho.filter((produto) => produto.id !== produtoId);
     setCarrinho(carrinhoAtualizado);
-    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Atualiza o carrinho no localStorage
+    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); 
   };
 
-  // Função para calcular o valor total do carrinho
+
   const calcularValorTotal = () => {
     return carrinho.reduce((total, produto) => total + (produto.value * produto.quantity), 0);
+  };
+
+
+  const finalizarCompra = async () => {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      alert("Você precisa estar logado para finalizar a compra!");
+      return;
+    }
+
+
+    const saleData = {
+      amount: calcularValorTotal(),
+      sale_date: new Date().toISOString(),
+      user_id: userId,
+      sale_products_attributes: carrinho.map((produto) => ({
+        product_id: produto.id,
+        quantity: produto.quantity,
+        rated: false,
+      })),
+    };
+
+    try {
+      const response = await createSale(saleData);
+      console.log("Venda criada com sucesso:", response);
+      localStorage.removeItem("carrinho");
+      setCarrinho([]); 
+      alert("Compra realizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao criar a venda:", error);
+      alert("Houve um erro ao finalizar a compra.");
+    }
   };
 
   return (
@@ -114,9 +145,9 @@ function Navbar({ carrinhoCount, recuperarCarrinho }: { carrinhoCount: number, r
                           <input
                             type="number"
                             className="form-control mx-2"
-                            value={produto.quantity || 1} // Garantir que o valor seja 1 se a quantidade for indefinida
+                            value={produto.quantity || 1}
                             min="1"
-                            onChange={(e) => alterarQuantidade(produto.id, parseInt(e.target.value) || 1)} // Se o valor for inválido, considera 1
+                            onChange={(e) => alterarQuantidade(produto.id, parseInt(e.target.value) || 1)}
                             style={{ width: "60px" }}
                           />
                           <button
@@ -143,7 +174,7 @@ function Navbar({ carrinhoCount, recuperarCarrinho }: { carrinhoCount: number, r
               <div className="modal-footer">
                 <h5>Total: R${calcularValorTotal().toFixed(2)}</h5>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Fechar</button>
-                <Link to="/checkout" className="btn btn-primary">Finalizar Compra</Link>
+                <button type="button" className="btn btn-primary" onClick={finalizarCompra}>Finalizar Compra</button>
               </div>
             </div>
           </div>

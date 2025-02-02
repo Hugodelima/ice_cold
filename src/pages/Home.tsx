@@ -1,12 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { fetchCategories, fetchProductsByCategory } from "../api/api";
+import { fetchCategories, fetchProductsByCategory, createRating, fetchProductDetails } from "../api/api";
 import Navbar from "../components/Navbar";
-import "../App.css"
-
-interface Categoria {
-  id: number;
-  title: string;
-}
+import { useNavigate } from "react-router-dom";
+import "../App.css";
 
 interface Produto {
   id: number;
@@ -20,57 +16,90 @@ interface Produto {
   category_id: number;
 }
 
-interface Avaliacao {
-  rating: number;
-  comment: string;
-  created_at: string;
-}
-
 function Home() {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [produtosPorCategoria, setProdutosPorCategoria] = useState<{ [key: number]: Produto[] }>({});
-  const [detalhesProduto, setDetalhesProduto] = useState<{ [key: number]: boolean }>({});
+  const [categorias, setCategorias] = useState([]);
+  const [produtosPorCategoria, setProdutosPorCategoria] = useState({});
+  const [ratings, setRatings] = useState<any>({});
+  const [showModal, setShowModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
+  const [userRating, setUserRating] = useState({ star: 0, comment: "" });
   const [carrinho, setCarrinho] = useState<Produto[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const categoriasData = await fetchCategories();
-        console.log("Categorias recebidas:", categoriasData);
-        
-        // Limitar para as 3 primeiras categorias
-        const categoriasLimitadas = categoriasData.slice(0, 3);
-
-        const produtosData: { [key: number]: Produto[] } = {};
-        for (const categoria of categoriasLimitadas) {
-          const produtos = await fetchProductsByCategory(categoria.id);
-          produtosData[categoria.id] = produtos.slice(0, 6); // Limitar a 6 produtos
-        }
-
-        setCategorias(categoriasLimitadas);
-        setProdutosPorCategoria(produtosData);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-      }
-    };
-
+    const token = localStorage.getItem("user_id");
+    if (!token) {
+      navigate("/login");
+    }
     loadData();
-  }, []); 
+  }, []);
 
-  const toggleDetalhesProduto = (produtoId: number) => {
-    setDetalhesProduto((prevState) => ({
-      ...prevState,
-      [produtoId]: !prevState[produtoId],
+  const loadData = async () => {
+    try {
+      const categoriasData = await fetchCategories();
+      setCategorias(categoriasData.slice(0, 3));
+      const produtosData: any = {};
+      for (const categoria of categoriasData.slice(0, 3)) {
+        const produtos = await fetchProductsByCategory(categoria.id);
+        produtosData[categoria.id] = produtos;
+      }
+      setProdutosPorCategoria(produtosData);
+
+      const ratingsData = await Promise.all(
+        Object.values(produtosData).flat().map((produto: Produto) =>
+          fetchProductDetails(produto.id)
+            .then((productDetails) => ({
+              productId: produto.id,
+              ratings: productDetails.ratings || []
+            }))
+        )
+      );
+
+      const ratingsMap: any = {};
+      ratingsData.forEach(({ productId, ratings }) => {
+        ratingsMap[productId] = ratings;
+      });
+
+      setRatings(ratingsMap);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    }
+  };
+
+  const handleRating = async () => {
+    if (!userRating.star || !userRating.comment) return;
+
+    const userId = localStorage.getItem("user_id");
+    await createRating({
+      star: userRating.star,
+      comment: userRating.comment,
+      user_id: userId,
+      product_id: selectedProduct?.id as number,
+    });
+
+    setRatings((prevRatings) => ({
+      ...prevRatings,
+      [selectedProduct?.id as number]: [
+        ...(prevRatings[selectedProduct?.id as number] || []),
+        { star: userRating.star, comment: userRating.comment }
+      ]
     }));
+
+    setShowModal(false);
+  };
+
+  const handleShowModal = (product: Produto) => {
+    setSelectedProduct(product);
+    setUserRating({ star: 0, comment: "" });
+    setShowModal(true);
   };
 
   const adicionarAoCarrinho = (produto: Produto) => {
-    const carrinhoAtualizado = [...carrinho, {...produto, quantity: 1}];
+    const carrinhoAtualizado = [...carrinho, { ...produto, quantity: 1 }];
     setCarrinho(carrinhoAtualizado);
-    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado)); // Salvar no localStorage
+    localStorage.setItem("carrinho", JSON.stringify(carrinhoAtualizado));
   };
 
-  // Função para recuperar carrinho do localStorage
   const recuperarCarrinho = () => {
     const carrinhoSalvo = localStorage.getItem("carrinho");
     if (carrinhoSalvo) {
@@ -78,69 +107,45 @@ function Home() {
     }
   };
 
-  const obterAvaliacoes = (produtoId: number): Avaliacao[] => {
-    return [
-      { rating: 5, comment: "Excelente produto! Adoro o sabor!", created_at: "2025-01-15" },
-      { rating: 4, comment: "Muito bom, mas poderia ser um pouco mais doce.", created_at: "2025-01-14" },
-      { rating: 3, comment: "Sabor bom, porém a embalagem estava danificada.", created_at: "2025-01-13" }
-    ];
-  };
-
-  console.log("home quantidade: " + carrinho.length);
-
   return (
     <>
       <Navbar carrinhoCount={carrinho.length} recuperarCarrinho={recuperarCarrinho} />
-      
       <main className="container mt-5">
         {categorias.map((categoria) => (
           <div key={categoria.id} className="mb-5">
             <h2 className="text-start text-primary mb-4">{categoria.title}</h2>
-
             <div className="row">
-              {produtosPorCategoria[categoria.id]?.map((produto) => (
+              {produtosPorCategoria[categoria.id]?.map((produto: Produto) => (
                 <div key={produto.id} className="col-lg-4 col-md-6 col-sm-12 mb-4">
                   <div className="card h-100 shadow-sm">
                     <img src={produto.image_url} className="card-img-top" alt={produto.title} />
                     <div className="card-body">
                       <h5 className="card-title">{produto.title}</h5>
                       <p className="card-text">{produto.description}</p>
-                      <p className="card-text">
-                        <strong>R${Number(produto.value || 0).toFixed(2)}</strong>
-                      </p>
-                      <p className="card-text">
-                        <strong>Tamanho:</strong> {produto.size}
-                      </p>
-                      <button 
-                        className="btn btn-primary" 
-                        onClick={() => toggleDetalhesProduto(produto.id)}
+                      <button
+                        className="btn btn-info"
+                        onClick={() => handleShowModal(produto)}
                       >
-                        {detalhesProduto[produto.id] ? 'Ver Menos' : 'Ver Mais Detalhes'}
+                        Avaliar
                       </button>
-                      <button 
+
+                      <button
                         className="btn btn-success ms-2"
                         onClick={() => adicionarAoCarrinho(produto)}
                       >
                         Adicionar ao Carrinho
                       </button>
-
-                      {detalhesProduto[produto.id] && (
-                        <div className="mt-3">
-                          <h6>Detalhes do Produto:</h6>
-                          <p>{produto.description}</p>
-                          <div>
-                            <h6>Avaliações:</h6>
-                            <ul>
-                              {obterAvaliacoes(produto.id).map((avaliacao, index) => (
-                                <li key={index}>
-                                  <strong>{avaliacao.rating} Estrelas:</strong> {avaliacao.comment} <br />
-                                  <small>{new Date(avaliacao.created_at).toLocaleDateString()}</small>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      )}
+                      <div>
+                        {ratings[produto.id]?.length > 0 ? (
+                          ratings[produto.id].map((rating: any, index: number) => (
+                            <p key={index}>
+                              Avaliação: {rating.star} estrelas - {rating.comment}
+                            </p>
+                          ))
+                        ) : (
+                          <p>Este produto ainda não foi avaliado.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -149,8 +154,98 @@ function Home() {
           </div>
         ))}
       </main>
+
+      {showModal && (
+        <div className="modal" style={modalStyles}>
+          <div className="modal-content" style={modalContentStyles}>
+            <span
+              className="close"
+              onClick={() => setShowModal(false)}
+              style={closeButtonStyles}
+            >
+              &times;
+            </span>
+            <h3>Avaliar Produto</h3>
+            <div>
+              <label>Avaliação (de 1 a 5 estrelas)</label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={userRating.star}
+                onChange={(e) => setUserRating({ ...userRating, star: parseInt(e.target.value) })}
+                style={inputStyles}
+              />
+            </div>
+            <div>
+              <label>Comentário</label>
+              <textarea
+                value={userRating.comment}
+                onChange={(e) => setUserRating({ ...userRating, comment: e.target.value })}
+                style={textareaStyles}
+              />
+            </div>
+            <button onClick={handleRating} style={buttonStyles}>Enviar Avaliação</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
+const modalStyles = {
+  position: "fixed",
+  top: "0",
+  left: "0",
+  width: "100%",
+  height: "100%",
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 1000,
+};
+
+const modalContentStyles = {
+  backgroundColor: "white",
+  padding: "20px",
+  borderRadius: "5px",
+  width: "400px",
+  textAlign: "center",
+};
+
+const closeButtonStyles = {
+  position: "absolute",
+  top: "10px",
+  right: "10px",
+  fontSize: "20px",
+  cursor: "pointer",
+};
+
+const inputStyles = {
+  width: "100%",
+  padding: "8px",
+  margin: "10px 0",
+  border: "1px solid #ccc",
+  borderRadius: "5px",
+};
+
+const textareaStyles = {
+  width: "100%",
+  padding: "8px",
+  margin: "10px 0",
+  border: "1px solid #ccc",
+  borderRadius: "5px",
+  minHeight: "100px",
+};
+
+const buttonStyles = {
+  padding: "10px 20px",
+  backgroundColor: "#28a745",
+  color: "white",
+  border: "none",
+  borderRadius: "5px",
+  cursor: "pointer",
+};
 
 export default Home;
