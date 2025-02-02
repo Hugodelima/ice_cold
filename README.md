@@ -1,50 +1,26 @@
-# React + TypeScript + Vite
+# Este projeto é apenas o front-end, o back-end se encontra neste [link](https://github.com/Hugodelima/iceCreamAPI)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
+## Cadastro de Usuário
+![Screenshot From 2025-02-01 21-07-46](https://github.com/user-attachments/assets/2386e1f8-f08e-4704-8938-d51ae0984fc9)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Login de Usuário
+![Screenshot From 2025-02-01 21-08-34](https://github.com/user-attachments/assets/bd4672e2-8945-45c2-b5a4-51e69a03c4d1)
 
-## Expanding the ESLint configuration
+## Home
+![Screenshot From 2025-02-01 21-08-48](https://github.com/user-attachments/assets/5bfb7c4f-0382-4dc2-91cc-a49af077b87f)
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Avaliação de Produto
+![Screenshot From 2025-02-01 21-08-58](https://github.com/user-attachments/assets/031aa425-5ac7-42d2-97fe-a6b6c789650f)
 
-- Configure the top-level `parserOptions` property like this:
+## Adicionar ao Carrinho
+![Screenshot From 2025-02-01 21-09-07](https://github.com/user-attachments/assets/498dc396-de2a-40aa-9567-9b6b20195399)
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Carrinho de Compras
+![Screenshot From 2025-02-01 21-09-19](https://github.com/user-attachments/assets/c948b6e3-4edf-4431-b46b-e3b3e6f22d83)
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Finalizar Compra
+![Screenshot From 2025-02-01 21-09-23](https://github.com/user-attachments/assets/ce6e7419-6c37-4678-a5e4-66f41ec3e1b7)
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## Sobre
+![Screenshot From 2025-02-01 21-09-50](https://github.com/user-attachments/assets/2f773d1f-4bfc-40ec-aeb7-7fe4735f229c)
